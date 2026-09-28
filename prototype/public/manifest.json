@@ -1,0 +1,18 @@
+{
+  "short_name": "Divine School",
+  "name": "Divine School — Digital Platform",
+  "description": "School Management & Parent Communication Platform",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/?portal=parent",
+  "background_color": "#f5f5f7",
+  "theme_color": "#0071e3",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -1,0 +1,95 @@
+name: Build Android APK (Divine School)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://fambhjwxdezrdjndaezg.supabase.co' }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWJoand4ZGV6cmRqbmRhZXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1Njk3NTksImV4cCI6MjEwNjE0NTc1OX0.XqCgzmuSKHRG0UYeK68kwhp2rMkqDD5jZRi_nYHx3rA' }}
+      VITE_SCHOOL_ID: ${{ secrets.VITE_SCHOOL_ID || 'sch-divine-01' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Detect Workspace Directory
+        id: workspace
+        run: |
+          if [ -d "prototype" ]; then
+            echo "app_dir=prototype" >> $GITHUB_OUTPUT
+            echo "android_dir=prototype/android" >> $GITHUB_OUTPUT
+          else
+            echo "app_dir=." >> $GITHUB_OUTPUT
+            echo "android_dir=android" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ${{ steps.workspace.outputs.app_dir }}/package-lock.json
+
+      - name: Set up Java 21 (Temurin JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NPM Dependencies
+        run: |
+          cd ${{ steps.workspace.outputs.app_dir }}
+          npm ci
+
+      - name: Build Web Application Bundle (Vite)
+        run: |
+          cd ${{ steps.workspace.outputs.app_dir }}
+          npm run build
+
+      - name: Sync Capacitor Android Project
+        run: |
+          cd ${{ steps.workspace.outputs.app_dir }}
+          npx cap sync android
+
+      - name: Grant Execute Permission to Gradle Wrapper
+        run: |
+          chmod +x ${{ steps.workspace.outputs.android_dir }}/gradlew
+
+      - name: Compile Android APK (Debug / Direct Install)
+        run: |
+          cd ${{ steps.workspace.outputs.android_dir }}
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Find and Rename APK
+        run: |
+          APK_PATH=$(find ${{ steps.workspace.outputs.android_dir }}/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          echo "Found APK at: $APK_PATH"
+          mkdir -p build-artifacts
+          cp "$APK_PATH" build-artifacts/DivineSchool-v1.0.0.apk
+
+      - name: Upload APK as GitHub Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DivineSchool-Android-APK
+          path: build-artifacts/DivineSchool-v1.0.0.apk
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "### 🎉 Android APK Generated Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "The **DivineSchool-v1.0.0.apk** file is available for direct download in the **Artifacts** section of this GitHub Actions run." >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Platform:** Android 8.0+ (API 26 to 34+)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cloud Backend:** Live Supabase WebSockets (SchoolSync)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Installation:** Transfer APK via WhatsApp / Drive and tap 'Install' on any Android phone." >> $GITHUB_STEP_SUMMARY

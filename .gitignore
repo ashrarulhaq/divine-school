@@ -1,0 +1,23 @@
+# Dependencies & Build artifacts
+node_modules/
+dist/
+build/
+*.log
+
+# Environment
+.env
+.env*.local
+
+# Android / iOS Capacitor caches
+prototype/android/.gradle/
+prototype/android/build/
+prototype/android/app/build/
+prototype/android/local.properties
+prototype/ios/App/Pods/
+prototype/ios/App/build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
