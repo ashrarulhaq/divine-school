@@ -32,21 +32,16 @@ jobs:
             echo "android_dir=android" >> $GITHUB_OUTPUT
           fi
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ${{ steps.workspace.outputs.app_dir }}/package-lock.json
+          node-version: 22
 
       - name: Set up Java 21 (Temurin JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Install NPM Dependencies
         run: |
