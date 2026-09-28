@@ -39,6 +39,7 @@ import {
   saveCloudSignature,
   fetchCloudNotifications,
   saveCloudNotification,
+  fetchCloudClassroomRegisters,
   broadcastCloudEvent,
   subscribeToCloudRealtime,
 } from '../lib/supabase';
@@ -393,7 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     async function hydrateFromCloud() {
       try {
-        const [cloudStudents, cloudAttendance, cloudHomework, cloudSubs, cloudSigs, cloudNotifs] =
+        const [cloudStudents, cloudAttendance, cloudHomework, cloudSubs, cloudSigs, cloudNotifs, cloudRegisters] =
           await Promise.all([
             fetchCloudStudents(),
             fetchCloudAttendance(),
@@ -401,6 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             fetchCloudSubmissions(),
             fetchCloudSignatures(),
             fetchCloudNotifications(),
+            fetchCloudClassroomRegisters(),
           ]);
 
         if (!isMounted) return;
@@ -422,6 +424,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         if (cloudNotifs && cloudNotifs.length > 0) {
           setNotifications(cloudNotifs);
+        }
+        if (cloudRegisters && Object.keys(cloudRegisters).length > 0) {
+          setClassroomSummaries((prev) =>
+            prev.map((c) => {
+              const reg = cloudRegisters[c.grade];
+              if (reg && reg.isSubmitted) {
+                return {
+                  ...c,
+                  status: 'SUBMITTED',
+                  presentCount: reg.presentCount,
+                  timeMarked: reg.timeMarked || c.timeMarked,
+                };
+              }
+              return c;
+            })
+          );
         }
       } catch (err) {
         console.warn('Could not hydrate from Supabase, using local state:', err);

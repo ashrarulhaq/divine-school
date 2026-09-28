@@ -174,6 +174,42 @@ export async function saveCloudRegisterSubmission(
 }
 
 /**
+ * Fetch daily classroom register statuses from Supabase
+ */
+export async function fetchCloudClassroomRegisters(
+  schoolId = DEFAULT_SCHOOL_ID
+): Promise<Record<string, { isSubmitted: boolean; presentCount: number; timeMarked?: string }> | null> {
+  if (!supabase) return null;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('classroom_registers')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('date', today);
+
+    if (error || !data) return null;
+
+    const map: Record<string, { isSubmitted: boolean; presentCount: number; timeMarked?: string }> = {};
+    data.forEach((row: any) => {
+      let timeStr: string | undefined;
+      if (row.submitted_at) {
+        timeStr = new Date(row.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      map[row.grade] = {
+        isSubmitted: Boolean(row.is_submitted),
+        presentCount: row.present_count || 0,
+        timeMarked: timeStr,
+      };
+    });
+    return map;
+  } catch (err) {
+    console.warn('Network error fetching classroom registers:', err);
+    return null;
+  }
+}
+
+/**
  * Fetch homework items from Supabase
  */
 export async function fetchCloudHomework(schoolId = DEFAULT_SCHOOL_ID): Promise<HomeworkItem[] | null> {
